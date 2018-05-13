@@ -1,1 +1,2 @@
 # stm32f7
+STM32F746G-DISKO
