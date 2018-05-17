@@ -101,22 +101,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-   /* if(HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin)== GPIO_PIN_SET) 
-    { 
-       if(setLed ==0)
-       {  
-         HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //Toggle the state of pin
-         setLed = 1;
-       }
-       // HAL_Delay(500); 
-    }  
-     else 
-       if(setLed ==1)
-     { 
-       HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-       setLed = 0;
-     }
-    */
   }
   /* USER CODE END WHILE */
 

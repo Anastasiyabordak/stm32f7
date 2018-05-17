@@ -197,11 +197,21 @@ void SysTick_Handler(void)
 void EXTI15_10_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
-
+  static volatile uint8_t setLed = 0;
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+  if(setLed == 0)
+  {  
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //Toggle the state of pin
+    setLed = 1;
+   }
+   else 
+    if(setLed == 1)
+    { 
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      setLed = 0;
+    }
   /* USER CODE END EXTI15_10_IRQn 1 */
 }
 
