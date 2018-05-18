@@ -40,6 +40,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim6;
 
 /******************************************************************************/
 /*            Cortex-M7 Processor Interruption and Exception Handlers         */ 
@@ -201,18 +202,32 @@ void EXTI15_10_IRQHandler(void)
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-  if(setLed == 0)
+   if(setLed == 0)
   {  
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET); //Toggle the state of pin
+    HAL_TIM_Base_Start_IT(&htim6);
     setLed = 1;
    }
    else 
     if(setLed == 1)
     { 
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      HAL_TIM_Base_Stop_IT(&htim6);
       setLed = 0;
     }
   /* USER CODE END EXTI15_10_IRQn 1 */
+}
+
+/**
+* @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
+*/
+void TIM6_DAC_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+  HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+  /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**
