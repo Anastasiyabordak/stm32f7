@@ -56,7 +56,6 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi);
 static void MX_NVIC_Init(void);
 extern SPI_HandleTypeDef hspi2;
 uint8_t data[2];
@@ -111,7 +110,15 @@ int main(void)
  // SPI2->CR2 |= SPI_CR2_ERRIE;        //разрешить прерывание при возникновении ошибки
   SPI2->CR1 &= ~SPI_CR1_SSM;
   SPI2->SR = 0;
-  HAL_SPI_Receive_IT(&hspi2, data, 1);
+   if ( HAL_GPIO_ReadPin( Button_GPIO_Port,Button_Pin) == GPIO_PIN_SET)
+  {   
+    button[0] = 10;
+  }
+  else 
+  {
+    button[0] = 0;
+  }
+  HAL_SPI_TransmitReceive_IT(&hspi2,button, data, 1);
   //NVIC_EnableIRQ (SPI2_IRQn); //0100
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
   /* USER CODE END 2 */
@@ -252,11 +259,7 @@ void assert_failed(uint8_t* file, uint32_t line)
 /**
   * @}
   */
-
-/**
-  * @}
-  */
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
 {
   
   if(data[0] == 10)
@@ -264,7 +267,22 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
     HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
   }
   else 
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  { 
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  }
+  if ( HAL_GPIO_ReadPin( Button_GPIO_Port,Button_Pin) == GPIO_PIN_SET)
+  {   
+    button[0] = 10;
+  }
+  else 
+  {
+    button[0] = 0;
+  }
+ // Button_Pin GPIO_PIN_0
   HAL_SPI_TransmitReceive_IT(&hspi2,button, data, 1);
 }
+/**
+  * @}
+  */
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
