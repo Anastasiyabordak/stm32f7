@@ -39,6 +39,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f7xx_hal.h"
+#include "spi.h"
 #include "tim.h"
 #include "gpio.h"
 
@@ -55,8 +56,11 @@
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi);
 static void MX_NVIC_Init(void);
-
+extern SPI_HandleTypeDef hspi2;
+uint8_t data[2];
+uint8_t button[2];
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
@@ -96,17 +100,29 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM6_Init();
+  MX_SPI2_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
   int setLed = 0;
+ // SPI2->CR2 |= SPI_CR2_TXEIE;        //разрешить прерывание по окончанию передачи               /
+  SPI2->CR2 |= SPI_CR2_RXNEIE;       //разрешить прерывание, если принят байт данных
+ // SPI2->CR2 |= SPI_CR2_ERRIE;        //разрешить прерывание при возникновении ошибки
+  SPI2->CR1 &= ~SPI_CR1_SSM;
+  SPI2->SR = 0;
+  HAL_SPI_Receive_IT(&hspi2, data, 1);
+  //NVIC_EnableIRQ (SPI2_IRQn); //0100
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // 
+    // HAl_DELAY(500);
+    //  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
   }
   /* USER CODE END WHILE */
 
@@ -240,5 +256,15 @@ void assert_failed(uint8_t* file, uint32_t line)
 /**
   * @}
   */
-
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  
+  if(data[0] == 10)
+  {
+    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+  }
+  else 
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  HAL_SPI_TransmitReceive_IT(&hspi2,button, data, 1);
+}
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
