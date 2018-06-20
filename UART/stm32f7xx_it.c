@@ -36,10 +36,11 @@
 #include "stm32f7xx_it.h"
 
 /* USER CODE BEGIN 0 */
-
+uint8_t _tData[DMA + 1];
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim6;
 extern DMA_HandleTypeDef hdma_usart6_rx;
 extern DMA_HandleTypeDef hdma_usart6_tx;
 extern UART_HandleTypeDef huart6;
@@ -193,6 +194,47 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f7xx.s).                    */
 /******************************************************************************/
+
+/**
+* @brief This function handles EXTI line[15:10] interrupts.
+*/
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
+}
+
+/**
+* @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
+*/
+void TIM6_DAC_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+  
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+    _tData[0] = CONTROL;
+    if ( HAL_GPIO_ReadPin( Button_GPIO_Port,Button_Pin) == GPIO_PIN_SET)
+    {  
+     _tData[1] = 10;
+    }
+    else 
+    {
+     _tData[1] = 0;
+    }
+    for(int i = 2; i < DMA + 1; i++)
+    {
+      _tData[i] = _tData[i-1] + 1;
+    }
+    HAL_UART_Transmit_DMA(&huart6, _tData, DMA + 1);
+  /* USER CODE END TIM6_DAC_IRQn 1 */
+}
 
 /**
 * @brief This function handles DMA2 stream1 global interrupt.

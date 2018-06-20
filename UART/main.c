@@ -41,14 +41,12 @@
 #include "stm32f7xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-#define DMA 5
-uint8_t TEST[1] = {255};
-uint8_t test[1];
-uint8_t rflag = 0; 
-uint8_t tflag = 0;
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+
+TIM_HandleTypeDef htim6;
 
 UART_HandleTypeDef huart6;
 DMA_HandleTypeDef hdma_usart6_rx;
@@ -64,6 +62,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART6_UART_Init(void);
+static void MX_TIM6_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -71,7 +70,6 @@ static void MX_USART6_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-uint8_t _tData[DMA];
 uint8_t _rData[DMA];
 /* USER CODE END 0 */
 
@@ -106,45 +104,10 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART6_UART_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-/* if ( HAL_GPIO_ReadPin( Button_GPIO_Port,Button_Pin) == GPIO_PIN_SET) UART single
-  {   
-    _tData[0] = 10;
-  }
-  else 
-  {
-    _tData[0] = 0;
-  }
-  for(int i = 0; i < 0xff; i++);
-  HAL_UART_Transmit_IT(&huart6, _tData,1);
-  
   HAL_UART_Receive_IT(&huart6, _rData, 1);
-  
-  if(_rData[0] == 10)
-  {
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-  }
-  else 
-  { 
-    HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-  }*/
- if ( HAL_GPIO_ReadPin( Button_GPIO_Port,Button_Pin) == GPIO_PIN_SET)
-  {   
-   _tData[0] = 10;
-  }
-  else 
-  {
-   _tData[0] = 0;
-  }
-  for(int i = 0; i < 0xffffff; i++);
-  for(int i = 1; i < DMA; i++)
-  {
-    _tData[i] = _tData[i-1] + 1;
-  }
-  tflag = 0;
-  HAL_UART_Transmit_IT(&huart6, TEST,1);
-  rflag = 0;
-  HAL_UART_Receive_IT(&huart6, test, 1);
+  HAL_TIM_Base_Start_IT(&htim6);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -206,7 +169,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)
@@ -231,6 +194,31 @@ void SystemClock_Config(void)
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/* TIM6 init function */
+static void MX_TIM6_Init(void)
+{
+
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 53999;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 49;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
 }
 
 /* USART6 init function */
@@ -288,6 +276,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOI_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
@@ -305,58 +294,48 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Button_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PD8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if(test[0] == TEST[0])
-  {
-    if(!rflag)
-    {
-      rflag = 1;
-      HAL_UART_Receive_DMA(&huart6, _rData, DMA);
-    }
-    if(_rData[0] == 10)
-    {
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-    }
-    else 
-    { 
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-    }
-  }
-  rflag = 0;
-  HAL_UART_Receive_IT(&huart6, test, 1);
+ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+ {
+   if(_rData[0]  == CONTROL)
+   {
+     HAL_UART_Receive_DMA(&huart6, _rData, DMA);
+   }
+   else
+   {
+      if(_rData[0] == 10)
+      {
+       HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+      }
+      else 
+      { 
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      }
+      HAL_UART_Receive_IT(&huart6, _rData, 1);
+   }
 }
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) 
 {
-  if(!tflag)
-  {
-     if ( HAL_GPIO_ReadPin( Button_GPIO_Port,Button_Pin) == GPIO_PIN_SET)
-    {  
-     _tData[0] = 10;
-    }
-    else 
-    {
-     _tData[0] = 0;
-    }
-    for(int i = 0; i < 0xffffff; i++);
-    for(int i = 1; i < DMA; i++)
-    {
-      _tData[i] = _tData[i-1] + 1;
-    }
-    tflag = 1;
-    HAL_UART_Transmit_DMA(huart, _tData, DMA);
-  }
-  else
-  {
-    tflag = 0;
-    HAL_UART_Transmit_IT(huart, TEST,1);
-  }
+
+
+
  }
-
-
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+}
 /* USER CODE END 4 */
 
 /**
